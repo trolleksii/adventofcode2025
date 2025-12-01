@@ -61,7 +61,6 @@ func main() {
 		default:
 			panic("unknown direction")
 		}
-		fmt.Println(op, currentNum, clicks)
 		password += clicks
 	}
 	fmt.Println(password)
