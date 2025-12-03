@@ -1,25 +1,27 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"bufio"
 	"strconv"
+	"fmt"
+	"os"
 )
 
 func getMaxJoltage(bank string) int {
-	cells := []byte{'0', '0'}
-	l := len(bank)
-	for i := 0; i < l-1; i++ {
-		if bank[i] > cells[0] {
-			cells[0] = bank[i]
-			cells[1] = 0
-		} else if bank[i] > cells[1] {
-			cells[1] = bank[i]
+	removals := len(bank) - 12
+	cells := bank[removals:]
+	j := 0
+	for i := removals - 1; i >= 0; i-- {
+		if bank[i] < cells[0] {
+			continue
 		}
-	}
-	if bank[l-1] > cells[1] {
-		cells[1] = bank[l-1]
+		for j <11 {
+			if cells[j] < cells[j+1] {
+				break
+			}
+			j++
+		} 
+		cells = bank[i:i+1] + cells[0:j] + cells[j+1:]
 	}
 	res, err := strconv.Atoi(string(cells))
 	if err != nil {
