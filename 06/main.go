@@ -8,22 +8,6 @@ import (
 	"strings"
 )
 
-func add(arr [][]int, i int) int {
-	res := 0
-	for j := range arr {
-		res += arr[j][i]
-	}
-	return res
-}
-
-func mul(arr [][]int, i int) int {
-	res := 1
-	for j := range arr {
-		res *= arr[j][i]
-	}
-	return res
-}
-
 func main() {
 	file, err := os.Open("input.txt")
 	if err != nil {
@@ -31,27 +15,50 @@ func main() {
 	}
 	defer file.Close()
 
-	elements := [][]int{}
+	lines := []string{}
 	scanner := bufio.NewScanner(file)
-	result := 0
 	for scanner.Scan() {
-		line := strings.Fields(scanner.Text())
-		row := []int{}
-		for i, e := range line {
-			switch e {
-			case "+":
-				result += add(elements, i)
-			case "*":
-				result += mul(elements, i)
-			default:
-				num, err := strconv.Atoi(e)
-				if err != nil {
-					panic(err)
-				}
-				row = append(row, num)
-			}
+		line := scanner.Text()
+		lines = append(lines, line)
+	}
+	numericRows := len(lines) - 1
+	opRow := lines[numericRows]
+	var op rune
+	result := 0
+	subResult := 0
+	for i, c := range opRow {
+		switch c {
+		case '+':
+			op = c
+			result += subResult
+			subResult = 0
+			fmt.Println("Result: ", result)
+		case '*':
+			op = c
+			result += subResult
+			subResult = 1
+			fmt.Println("Result: ", result)
 		}
-		elements = append(elements, row)
+		if i == len(opRow)-1 || opRow[i+1] == ' ' {
+			s := ""
+			for j := range numericRows {
+				s += string(lines[j][i])
+			}
+			num, err := strconv.Atoi(strings.Trim(s, " "))
+			if err != nil {
+				panic(err)
+			}
+			switch op {
+			case '+':
+				subResult += num
+			case '*':
+				subResult *= num
+			}
+			fmt.Println(string(op), num, ", subresult: ", subResult)
+		}
+		if i == len(opRow)-1 {
+			result += subResult
+		}
 	}
 	fmt.Println(result)
 }
