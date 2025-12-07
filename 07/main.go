@@ -2,12 +2,13 @@ package main
 
 import (
 	"bufio"
-	"os"
 	"fmt"
+	"os"
+	"strings"
 )
 
 func main() {
-	file, err := os.Open("input.txt")
+	file, err := os.Open("test.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -17,25 +18,43 @@ func main() {
 	scanner.Scan()
 	line := scanner.Text()
 	beamPos := make(map[int]struct{})
+	parentBeams := make(map[int]string)
 	for i := range line {
 		if line[i] == 'S' {
 			beamPos[i] = struct{}{}
+			parentBeams[i] = "S"
 			break
 		}
 	}
-	splits := 0
+
 	for scanner.Scan() {
 		line = scanner.Text()
 		for i, c := range line {
 			if c == '^' {
 				if _, ok := beamPos[i]; ok {
-					splits++
-					delete(beamPos, i)
 					beamPos[i-1] = struct{}{}
 					beamPos[i+1] = struct{}{}
+					thisParent := fmt.Sprintf("%v-%v", parentBeams[i], i)
+
+					if leftParent, exists := parentBeams[i-1]; exists {
+						parentBeams[i-1] = strings.Join([]string{leftParent, thisParent}, ",")
+					} else {
+						parentBeams[i-1] = thisParent
+					}
+					if rightParent, exists := parentBeams[i+1]; exists {
+						parentBeams[i+1] = strings.Join([]string{rightParent, thisParent}, ",")
+					} else {
+						parentBeams[i+1] = thisParent
+					}
+					delete(beamPos, i)
+					delete(parentBeams, i)
 				}
 			}
 		}
 	}
-	fmt.Println(splits)
+	total := 0
+	for i := range beamPos {
+		total +=len(strings.Split(parentBeams[i], ","))
+	}
+	fmt.Println(total)
 }
