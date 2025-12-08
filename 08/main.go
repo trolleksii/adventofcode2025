@@ -82,9 +82,8 @@ func main() {
 
 	slices.SortFunc(coordinatePairs, cmpPair)
 	chainIndex := 0
-	connections := 0
+	var lastPair Pair
 	for _, p := range coordinatePairs {
-		fmt.Printf("Checking points %v and %v\n", p.c1, p.c2)
 		chainA, aIsInChain := coordChain[p.c1]
 		chainB, bIsInChain := coordChain[p.c2]
 		if !aIsInChain && !bIsInChain {
@@ -92,37 +91,28 @@ func main() {
 			chains[chainIndex] = 2
 			coordChain[p.c1] = chainIndex
 			coordChain[p.c2] = chainIndex
-			fmt.Printf("  neither point is chained, creating chain %v with size %v\n", chainIndex, 2)
 			chainIndex++
+			lastPair = p
 		} else if !aIsInChain {
 			// if a is chained and b is not, get the intex of the chain a and include b into it
 			chains[chainB]++
 			coordChain[p.c1] = chainB
-			fmt.Printf("  point %v is unchained, attaching it to chain %v with new size %v\n", p.c1, chainB, chains[chainB])
+			lastPair = p
 		} else if !bIsInChain {
 			// if a is chained and b is not, get the intex of the chain a and include b into it
 			chains[chainA]++
 			coordChain[p.c2] = chainA
-			fmt.Printf("  point %v is unchained, attaching it to chain %v with new size %v\n", p.c2, chainA, chains[chainA])
+			lastPair = p
 		} else if chainA != chainB {
 			for k, v := range coordChain {
 				if v == chainB {
 					coordChain[k] = chainA
 				}
 			}
-			fmt.Printf("  point %v is in chain %v(size=%v), point %v is in chain %v(size=%v); merging as %v size %v\n", p.c1, chainA, chains[chainA], p.c2, chainB, chains[chainB], chainA, chains[chainA]+chains[chainB])
 			chains[chainA] += chains[chainB]
 			delete(chains, chainB)
-		}
-		connections++
-		if connections == 1000 {
-			break
-		}
+			lastPair = p
+		} 
 	}
-	x := []int{}
-	for _, v := range chains {
-		x = append(x, v)
-	}
-	slices.SortFunc(x, func(a, b int) int { return b - a })
-	fmt.Println("Top 3 chain sizes: ", x[:3])
+	fmt.Println(int(lastPair.c1.x * lastPair.c2.x))
 }
