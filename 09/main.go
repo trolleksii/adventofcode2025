@@ -33,23 +33,25 @@ func getCoordinates(line string) Coordinate {
 }
 
 func main() {
-	file, err := os.Open("test.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
+	redTiles := []Coordinate{}
 	reds := make(map[Coordinate]bool)
 	greens := make(map[Coordinate]bool)
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	this := getCoordinates(scanner.Text())
-	first := this // remember this to connect it with last point
+	redTiles = append(redTiles, this)
 	reds[this] = true
 	minX, maxX := this.x, this.x
 	minY, maxY := this.y, this.y
 	for scanner.Scan() {
 		next := getCoordinates(scanner.Text())
+		redTiles = append(redTiles, next)
 		if next.x < minX {
 			minX = next.x
 		}
@@ -88,6 +90,7 @@ func main() {
 		this = next
 	}
 	// connect last point with the first point
+	first := redTiles[0]
 	if first.x == this.x {
 		if first.y > this.y {
 			for i := this.y + 1; i < first.y; i++ {
@@ -121,20 +124,49 @@ func main() {
 		floodFill(Coordinate{c.x, c.y + 1})
 		floodFill(Coordinate{c.x, c.y - 1})
 	}
+	// start point must be inside, pick one manually
 	floodFill(Coordinate{x: 8, y: 2})
 
-	for y := range(9) {
-		row := make([]byte, 14)
-		for x := range 14 {
-			c := Coordinate{x:x, y:y}
-			if reds[c] {
-				row[x] = '#'
-			} else if greens[c] {
-				row[x] = 'X'
-			} else {
-				row[x] = '.'
+	//for y := range(9) {
+	//	row := make([]byte, 14)
+	//	for x := range 14 {
+	//		c := Coordinate{x:x, y:y}
+	//		if reds[c] {
+	//			row[x] = '#'
+	//		} else if greens[c] {
+	//			row[x] = 'X'
+	//		} else {
+	//			row[x] = '.'
+	//		}
+	//	}
+	//	fmt.Println(string(row))
+	//}
+	maxArea := 0
+	l := len(redTiles)
+	for i := range(l) {
+		for j := i + 1; j < l; j++ {
+			c1, c2 := redTiles[i], redTiles[j]
+			
+			// Check if all tiles in rectangle are red/green
+			valid := true
+			for y := min(c1.y, c2.y); y <= max(c1.y, c2.y); y++ {
+				for x := min(c1.x, c2.x); x <= max(c1.x, c2.x); x++ {
+					coord := Coordinate{x: x, y: y}
+					if !reds[coord] && !greens[coord] {
+						valid = false
+						break
+					}
+				}
+				if !valid { break }
+			}
+			
+			if valid {
+				area := squareArea(c1, c2)
+				if area > maxArea {
+					maxArea = area
+				}
 			}
 		}
-		fmt.Println(string(row))
 	}
+	fmt.Println(maxArea)
 }
