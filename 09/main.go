@@ -33,7 +33,7 @@ func getCoordinates(line string) Coordinate {
 }
 
 func main() {
-	file, err := os.Open("input.txt")
+	file, err := os.Open("test.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +65,7 @@ func main() {
 			maxY = next.y
 		}
 		reds[next] = true
-		// each consecutive pair has same x or y, everything in between is green
+		// paint the vertical borders
 		if next.x == this.x {
 			if next.y > this.y {
 				for i := this.y + 1; i < next.y; i++ {
@@ -76,17 +76,7 @@ func main() {
 					greens[Coordinate{x: this.x, y: i}] = true
 				}
 			}
-		} else {
-			if next.x > this.x {
-				for i := this.x + 1; i < next.x; i++ {
-					greens[Coordinate{x: i, y: this.y}] = true
-				}
-			} else {
-				for i := next.x + 1; i < this.x; i++ {
-					greens[Coordinate{x: i, y: this.y}] = true
-				}
-			}
-		}
+		} 
 		this = next
 	}
 	// connect last point with the first point
@@ -101,72 +91,34 @@ func main() {
 				greens[Coordinate{x: this.x, y: i}] = true
 			}
 		}
-	} else {
-		if first.x > this.x {
-			for i := this.x + 1; i < first.x; i++ {
-				greens[Coordinate{x: i, y: this.y}] = true
+	}	
+	for y := minY; y <= maxY; y++ {
+		inside := false
+		for x := minX; x <= maxX; x++ {
+			c := Coordinate{x:x, y:y}
+			// if inside and not coloured - do colour
+			if greens[c] || reds[c] { 
+				inside = !inside
+				continue
 			}
-		} else {
-			for i := first.x + 1; i < this.x; i++ {
-				greens[Coordinate{x: i, y: this.y}] = true
+			if inside {
+				greens[c] = true
 			}
 		}
 	}
-	// colour everything inside the boundaries
-	var floodFill func(Coordinate)
-	floodFill = func(c Coordinate) {
-		if reds[c] || greens[c] {
-			return
-		}
-		greens[c] = true
-		floodFill(Coordinate{c.x + 1, c.y})
-		floodFill(Coordinate{c.x - 1, c.y})
-		floodFill(Coordinate{c.x, c.y + 1})
-		floodFill(Coordinate{c.x, c.y - 1})
-	}
-	// start point must be inside, pick one manually
-	floodFill(Coordinate{x: 8, y: 2})
 
-	//for y := range(9) {
-	//	row := make([]byte, 14)
-	//	for x := range 14 {
-	//		c := Coordinate{x:x, y:y}
-	//		if reds[c] {
-	//			row[x] = '#'
-	//		} else if greens[c] {
-	//			row[x] = 'X'
-	//		} else {
-	//			row[x] = '.'
-	//		}
-	//	}
-	//	fmt.Println(string(row))
-	//}
-	maxArea := 0
-	l := len(redTiles)
-	for i := range(l) {
-		for j := i + 1; j < l; j++ {
-			c1, c2 := redTiles[i], redTiles[j]
-			
-			// Check if all tiles in rectangle are red/green
-			valid := true
-			for y := min(c1.y, c2.y); y <= max(c1.y, c2.y); y++ {
-				for x := min(c1.x, c2.x); x <= max(c1.x, c2.x); x++ {
-					coord := Coordinate{x: x, y: y}
-					if !reds[coord] && !greens[coord] {
-						valid = false
-						break
-					}
-				}
-				if !valid { break }
-			}
-			
-			if valid {
-				area := squareArea(c1, c2)
-				if area > maxArea {
-					maxArea = area
-				}
+	for y := range(9) {
+		row := make([]byte, 14)
+		for x := range 14 {
+			c := Coordinate{x:x, y:y}
+			if reds[c] {
+				row[x] = '#'
+			} else if greens[c] {
+				row[x] = 'X'
+			} else {
+				row[x] = '.'
 			}
 		}
+		fmt.Println(string(row))
 	}
-	fmt.Println(maxArea)
 }
