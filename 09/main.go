@@ -76,7 +76,7 @@ func main() {
 					greens[Coordinate{x: this.x, y: i}] = true
 				}
 			}
-		} 
+		}
 		this = next
 	}
 	// connect last point with the first point
@@ -91,26 +91,43 @@ func main() {
 				greens[Coordinate{x: this.x, y: i}] = true
 			}
 		}
-	}	
+	}
 	for y := minY; y <= maxY; y++ {
 		inside := false
 		for x := minX; x <= maxX; x++ {
-			c := Coordinate{x:x, y:y}
-			// if inside and not coloured - do colour
-			if greens[c] || reds[c] { 
-				inside = !inside
+			c := Coordinate{x: x, y: y}
+
+			if greens[c] {
+				// It's an edge - but is it a vertical edge?
+				// Check if it connects tiles above AND below
+				above := Coordinate{x: x, y: y - 1}
+				below := Coordinate{x: x, y: y + 1}
+				if (greens[above] || reds[above]) && (greens[below] || reds[below]) {
+					inside = !inside
+				}
 				continue
 			}
+
+			if reds[c] {
+				// Same check for red tiles
+				above := Coordinate{x: x, y: y - 1}
+				below := Coordinate{x: x, y: y + 1}
+				if (greens[above] || reds[above]) && (greens[below] || reds[below]) {
+					inside = !inside
+				}
+				continue
+			}
+
 			if inside {
 				greens[c] = true
 			}
 		}
 	}
 
-	for y := range(9) {
+	for y := range 9 {
 		row := make([]byte, 14)
 		for x := range 14 {
-			c := Coordinate{x:x, y:y}
+			c := Coordinate{x: x, y: y}
 			if reds[c] {
 				row[x] = '#'
 			} else if greens[c] {
