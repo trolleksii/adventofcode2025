@@ -10,9 +10,9 @@ import (
 )
 
 type Puzzle struct {
-	target     int
-	components []int
-	seqLen     int
+	lightsDiagram int
+	buttons       []int
+	seqLen        int
 }
 
 func main() {
@@ -23,29 +23,31 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), " ")
-		target := 0
-		diagram := line[0][1 : len(line[0])-1]
-		// traversing in the opposite direction to compensate the inverse
-		for i := len(diagram) - 1; i >= 0; i-- {
-			switch diagram[i] {
+		lightsDiagram := 0
+		diagramString := line[0][1 : len(line[0])-1]
+		// traversing in the opposite direction to compensate the buttonInversed
+		for i := len(diagramString) - 1; i >= 0; i-- {
+			switch diagramString[i] {
 			case '#':
-				target = (target << 1) + 1
+				lightsDiagram = (lightsDiagram << 1) + 1
 			case '.':
-				target = (target << 1)
+				lightsDiagram = (lightsDiagram << 1)
 			}
 		}
-		components := []int{}
-		// knowing which bits/buttons are in the combo, we can do bit shifting and sum to get the binary representation
-		// I couldn't figure how to do in proper order so I reversed the diagram instead and that
+
+		joltageReq := line[len(line)-1]
+		buttons := []int{}
+		// knowing which bits/lights are affected by the button, we can do bit shifting and sum to get the binary representation
+		// I couldn't figure how to do in proper order so I reversed the diagramString instead
 		for _, b := range line[1 : len(line)-1] {
-			inverse := 0
+			buttonInversed := 0
 			for i := range strings.SplitSeq(b[1:len(b)-1], ",") {
 				num, _ := strconv.Atoi(i)
-				inverse += 1 << num
+				buttonInversed += 1 << num
 			}
-			components = append(components, inverse)
+			buttons = append(buttons, buttonInversed)
 		}
-		puzzles = append(puzzles, Puzzle{target: target, components: components, seqLen: 1})
+		puzzles = append(puzzles, Puzzle{lightsDiagram: lightsDiagram, buttons: buttons, seqLen: 1})
 	}
 	total := 0
 	for _, puzzle := range puzzles {
@@ -62,21 +64,21 @@ func getShortestSequence(puzzle Puzzle) int {
 	for len(queue) > 0 {
 		subPuzzle := queue[0]
 		queue = queue[1:]
-		// see if we can get to target in one press
-		for i, comp := range subPuzzle.components {
+		// see if we can get to lightsDiagram in one press
+		for i, comp := range subPuzzle.buttons {
 			//skip button combos which don't touch interesting bits
-			if comp&subPuzzle.target == 0 {
+			if comp&subPuzzle.lightsDiagram == 0 {
 				continue
 			}
-			if comp == subPuzzle.target {
+			if comp == subPuzzle.lightsDiagram {
 				return subPuzzle.seqLen
 			} else {
-				// put sub-puzzle in a queue with new target, longer sequence, smaller component list
-				newTarget := subPuzzle.target ^ comp
-				queue = append(queue, Puzzle{seqLen: subPuzzle.seqLen + 1, target: newTarget, components: slices.Concat(subPuzzle.components[:i], subPuzzle.components[i+1:])})
+				// put sub-puzzle in a queue with new lightsDiagram, longer sequence, smaller component list
+				newTarget := subPuzzle.lightsDiagram ^ comp
+				queue = append(queue, Puzzle{seqLen: subPuzzle.seqLen + 1, lightsDiagram: newTarget, buttons: slices.Concat(subPuzzle.buttons[:i], subPuzzle.buttons[i+1:])})
 			}
 		}
 	}
-	// assuming solution always exist this should never run
-	return len(puzzle.components)
+	// assuming solution always exist the worst case scenario is pressing all buttons once
+	return len(puzzle.buttons)
 }
