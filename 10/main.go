@@ -35,7 +35,6 @@ func main() {
 			}
 		}
 
-		joltageReq := line[len(line)-1]
 		buttons := []int{}
 		// knowing which bits/lights are affected by the button, we can do bit shifting and sum to get the binary representation
 		// I couldn't figure how to do in proper order so I reversed the diagramString instead
