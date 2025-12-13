@@ -12,14 +12,6 @@ import (
 
 type Button []int
 
-func (b Button) connectLight(num int) {
-	b[num] = 1
-}
-
-func NewButton(size int) Button {
-	return make([]int, size)
-}
-
 type Puzzle struct {
 	joltageReq []int
 	seqLen     int
@@ -49,6 +41,7 @@ func (pq *PriorityQueue) Pop() any {
 	*pq = old[:n-1]
 	return item
 }
+
 func main() {
 	file, _ := os.Open("../test.txt")
 	defer file.Close()
@@ -72,10 +65,10 @@ func main() {
 		buttons := []Button{}
 		for _, bs := range data[1 : len(data)-1] {
 			lights := strings.Split(bs[1:len(bs)-1], ",")
-			button := NewButton(len(joltageReqs))
+			button := make(Button, len(joltageReqs))
 			for _, i := range lights {
 				lightIndex, _ := strconv.Atoi(i)
-				button.connectLight(lightIndex)
+				button[lightIndex] = 1
 			}
 			buttons = append(buttons, button)
 		}
@@ -90,34 +83,28 @@ func main() {
 	fmt.Println(total)
 }
 
-// subtracts b from a, k times. Returns new slice and a "net balance" which is 0 if resulting slice has all 0, +1 if resulting slice has no negative numbers, -1 if has any negative numbers
-func sub(a, b []int, k int) ([]int, int) {
-	isEmpty := true
-	hasNegatives := false
-	c := make([]int, len(a))
-	for i := range a {
-		c[i] = a[i] - b[i]*k
-		if c[i] != 0 {
-			isEmpty = false
-		}
-		if c[i] < 0 {
-			hasNegatives = true
-		}
+func sub(joltage, button []int, k int) []int {
+	c := make([]int, len(joltage))
+	for i := range joltage {
+		c[i] = joltage[i] - button[i]*k
 	}
-	netBalance := 1
-	if hasNegatives {
-		netBalance = -1
-	} else if isEmpty {
-		netBalance = 0
-	}
-	return c, netBalance
+	return c
 }
 
-func getMaxPresses(button, joltage []int) int {
+func isZero(joltage []int) bool {
+	for _, v := range joltage {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func getMaxPresses(joltage, button []int) int {
 	maxPresses := 999
 	for i, v := range button {
 		if v != 0 {
-			maxPresses = min(maxPresses, joltage[i] / v)
+			maxPresses = min(maxPresses, joltage[i])
 		}
 	}
 	return maxPresses
@@ -129,18 +116,15 @@ func getShortestSequence(puzzle Puzzle) int {
 	for queue.Len() > 0 {
 		subPuzzle := heap.Pop(queue).(Puzzle)
 		for buttonIndex, button := range subPuzzle.buttons {
-			_, balance := sub(subPuzzle.joltageReq, button, 1)
-			if balance < 0 {
-				continue
-			} else if balance == 0 {
-				return subPuzzle.seqLen + 1
+			if isZero(subPuzzle.joltageReq) {
+				return subPuzzle.seqLen
 			}
-			for i := getMaxPresses(button, subPuzzle.joltageReq); i >= 0; i-- {
-				newJoltageReq, _ := sub(subPuzzle.joltageReq, button, i)
+			for i := getMaxPresses(subPuzzle.joltageReq, button); i > 0; i-- {
+				newJoltageReq := sub(subPuzzle.joltageReq, button, i)
 				newSubPuzzle := Puzzle{seqLen: subPuzzle.seqLen + i, joltageReq: newJoltageReq, buttons: slices.Concat(subPuzzle.buttons[:buttonIndex], subPuzzle.buttons[buttonIndex+1:])}
 				heap.Push(queue, newSubPuzzle)
 			}
 		}
 	}
-	return -1
+	return -1 // could not find a solution
 }
