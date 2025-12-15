@@ -42,8 +42,8 @@ func (pq *PriorityQueue) Pop() any {
 	return item
 }
 
-func main() {
-	file, _ := os.Open("../test.txt")
+func Parse(filename string) []Puzzle {
+	file, _ := os.Open(filename)
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
@@ -74,13 +74,23 @@ func main() {
 		}
 		puzzles = append(puzzles, Puzzle{joltageReq: joltageReqs, buttons: buttons})
 	}
+	return puzzles
+}
+
+func main() {
+	puzzles := Parse("../input.txt")
+	for _, p := range puzzles {
+		fmt.Println(p)
+	}
 	total := 0
+	out := make(chan int)
+	defer close(out)
 	for _, puzzle := range puzzles {
-		// like recursion but iterative
 		result := getShortestSequence(puzzle)
+		fmt.Println(result)
 		total += result
 	}
-	fmt.Println(total)
+	fmt.Println("Total:", total)
 }
 
 func sub(joltage, button []int, k int) []int {
@@ -101,30 +111,61 @@ func isZero(joltage []int) bool {
 }
 
 func getMaxPresses(joltage, button []int) int {
-	maxPresses := 999
-	for i, v := range button {
+	// to find the max number of times a button can be pressed considering current joltage req
+	// we go through all the bits button affects and find the lowest joltage
+	maxP := 999
+	for _, v := range button {
 		if v != 0 {
-			maxPresses = min(maxPresses, joltage[i])
+			maxP = min(maxP, joltage[v])
 		}
 	}
-	return maxPresses
+	return maxP
+}
+
+func sliceToKey(j []int, bt []Button) string {
+	b := strings.Builder{}
+	for i, v := range j {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(strconv.Itoa(v))
+	}
+	b.WriteByte('+')
+	for i, bb := range bt {
+		if i > 0 {
+			b.WriteByte('|')
+		}
+		for j, bbt := range bb {
+			if j > 0 {
+				b.WriteByte(',')
+			}
+			b.WriteString(strconv.Itoa(bbt))
+		}
+	}
+	return b.String()
 }
 
 func getShortestSequence(puzzle Puzzle) int {
 	queue := &PriorityQueue{puzzle}
 	heap.Init(queue)
+	visited := make(map[string]bool)
 	for queue.Len() > 0 {
 		subPuzzle := heap.Pop(queue).(Puzzle)
+		key := sliceToKey(subPuzzle.joltageReq, subPuzzle.buttons)
+		if visited[key] {
+			continue
+		}
+		visited[key] = true
 		for buttonIndex, button := range subPuzzle.buttons {
 			if isZero(subPuzzle.joltageReq) {
 				return subPuzzle.seqLen
 			}
-			for i := getMaxPresses(subPuzzle.joltageReq, button); i > 0; i-- {
+			for i := 0; i <= getMaxPresses(subPuzzle.joltageReq, button); i++ {
 				newJoltageReq := sub(subPuzzle.joltageReq, button, i)
 				newSubPuzzle := Puzzle{seqLen: subPuzzle.seqLen + i, joltageReq: newJoltageReq, buttons: slices.Concat(subPuzzle.buttons[:buttonIndex], subPuzzle.buttons[buttonIndex+1:])}
 				heap.Push(queue, newSubPuzzle)
 			}
 		}
 	}
-	return -1 // could not find a solution
+	return -1
 }
